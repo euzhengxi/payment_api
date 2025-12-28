@@ -44,7 +44,7 @@ def get_transaction_details(arg_list:list):
 
 if __name__ == "__main__":
     
-    payment_api_url = "http://127.0.0.1:8000"
+    payment_api_url = "http://127.0.0.1:8000/v1"
 
     print("Welcome to thrustworhy payment! Where trustng us is your biggest mistake!")
     while True:

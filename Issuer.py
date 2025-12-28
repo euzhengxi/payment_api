@@ -43,11 +43,11 @@ class Transaction:
 
 #endpoints
 app = Flask(__name__)
-@app.route("/status", methods=["GET"])
+@app.route("/v1/status", methods=["GET"])
 def get_status():
     return {"message": "issuer running"}, 200
 
-@app.route("/txn", methods=["POST"])
+@app.route("/v1/txn", methods=["POST"])
 def create_transaction():
     info = request.get_json()
     logger.info(f"transaction received: {info}")
@@ -59,7 +59,7 @@ def create_transaction():
     else:
         return {"message": "transaction rejected"}, 500
 
-@app.route("/create", methods=["POST"])
+@app.route("/v1/create", methods=["POST"])
 def create_user():
     user = request.get_json()["user"]
     status = issuer.create_user(user)

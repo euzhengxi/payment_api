@@ -47,7 +47,11 @@ def check_database_availability():
 
 #endpoint setup
 app = Flask(__name__)
-@app.route("/txn", methods=["POST"])
+@app.route("/v1/status", methods=["GET"])
+def get_server_status():
+    return {"status": "running"}, 200
+
+@app.route("/v1/txn", methods=["POST"])
 def create_transaction():
     info = request.get_json()
     payer, payee = info["payer"], info["payee"]
@@ -125,7 +129,7 @@ def create_transaction():
     return http_response, 200
         
 
-@app.route("/txn/<transaction_id>", methods=["GET"])
+@app.route("/v1/txn/<transaction_id>", methods=["GET"])
 def get_transaction_details(transaction_id):
     response = requests.get(f"{database_server}/txn/{transaction_id}")
     if response.status_code == 200:
@@ -193,8 +197,8 @@ if __name__ == "__main__":
     #set up argparser
     parser = set_up_parser()
     args = parser.parse_args()
-    database_server = args.database_server
-    issuer_server = args.issuer_server
+    database_server = f"{args.database_server}/v1"
+    issuer_server = f"{args.issuer_server}/v1"
 
     #set up webserver
     status = check_database_availability()

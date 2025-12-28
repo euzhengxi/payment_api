@@ -10,10 +10,10 @@ from Issuer import *
 
 NUM_DATABASE_ENDPOINTS = 4
 NUM_ISSUER_ENDPOINTS = 3
-NUM_MAIN_ENDPOINTS = 2
+NUM_MAIN_ENDPOINTS = 3
 
 class DatabaseTest:
-    database_server = "http://127.0.0.1:8001"
+    database_server = "http://127.0.0.1:8001/v1"
 
     def get_database_status(self):
         response = requests.get(f"{self.database_server}/status")
@@ -56,7 +56,7 @@ class DatabaseTest:
         print(f"{NUM_DATABASE_ENDPOINTS} endpoints in Database are working")
 
 class IssuerTest:
-    server = "http://127.0.0.1:8002"
+    server = "http://127.0.0.1:8002/v1"
 
     def get_status(self):
         response = requests.get(f"{self.server}/status")
@@ -84,7 +84,11 @@ class IssuerTest:
 
 
 class MainTest:
-    server = "http://127.0.0.1:8000"
+    server = "http://127.0.0.1:8000/v1"
+
+    def get_status(self):
+        response = requests.get(f"{self.server}/status")
+        assert response.status_code == 200
 
     def create_transaction(self):
         request_json = {
@@ -107,6 +111,7 @@ class MainTest:
     
 
     def run(self):
+        self.get_status()
         self.create_transaction()
         self.get_transaction()
         print(f"{NUM_MAIN_ENDPOINTS} endpoints in main are working")

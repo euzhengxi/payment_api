@@ -49,6 +49,10 @@ Each component runs as an independent **microservice**, communicating over HTTP.
 - Unit tests covering API endpoints
 - Logging
 
+### v2 — 28 Dec 2025
+
+- Added versioning to endpoints
+
 ---
 
 ## Future Improvements

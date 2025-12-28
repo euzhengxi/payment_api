@@ -47,6 +47,7 @@ def get_authorisation(payer:str, payee:str, amount:float, issuer_server:str) -> 
         else:
             if response.status_code == 200:
                 return StatusCode.SUCCESS
+    logger.warning(response.json()["message"])
     return StatusCode.FAILURE
 
 def fulfill_transaction(payer, payee, amount:float) -> StatusCode:
