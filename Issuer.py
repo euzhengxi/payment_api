@@ -59,7 +59,7 @@ def create_transaction():
     else:
         return {"message": "transaction rejected"}, 500
 
-@app.route("/v1/create", methods=["POST"])
+@app.route("/v1/user", methods=["POST"])
 def create_user():
     user = request.get_json()["user"]
     status = issuer.create_user(user)

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import requests
 import logging
-import datetime
+import time
 
 from Backend import StatusCode
 '''
@@ -31,7 +31,8 @@ class EventSubscriber(ABC):
 class AnalyticsSubscriber(EventSubscriber):
     def handle_event(self, database_server, transaction_id) -> StatusCode:
         try:
-            response = requests.get(f"{database_server}/txn/{transaction_id}")
+            param_json = {"transaction_id": transaction_id}
+            response = requests.get(f"{database_server}/txn", params=param_json)
             if response.status_code == 200:
                 details = response.json()["details"]
                 #add transaction details for analytics
@@ -46,7 +47,8 @@ class AnalyticsSubscriber(EventSubscriber):
 class EmailSubscriber(EventSubscriber):
     def handle_event(self, database_server, transaction_id) -> StatusCode: 
         try:
-            response = requests.get(f"{database_server}/txn/{transaction_id}")
+            param_json = {"transaction_id": transaction_id}
+            response = requests.get(f"{database_server}/txn", params=param_json)
             if response.status_code == 200:
                 details = response.json()["details"]
                 #add transaction details for analytics
@@ -59,7 +61,9 @@ class EmailSubscriber(EventSubscriber):
 class SupportSubscriber(EventSubscriber):
     def handle_event(self, database_server, transaction_id) -> StatusCode:
         try:
-            response = requests.get(f"{database_server}/txn/{transaction_id}")
+            param_json = {"transaction_id": transaction_id}
+            response = requests.get(f"{database_server}/txn", params=param_json)
+            response = requests.get(f"{database_server}/txn")
             if response.status_code == 200:
                 details = response.json()["details"]
                 #add transaction details for analytics

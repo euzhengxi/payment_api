@@ -68,7 +68,7 @@ def create_transaction():
     #logging transaction with retries
     transaction_id = None
     for retry_attempt in range(3):
-        response = requests.post(f'{database_server}/log_transaction', json=transaction_json)
+        response = requests.post(f'{database_server}/txn', json=transaction_json)
         if (response.status_code == 200):
             transaction_id = response.json()["transaction_id"]
             break
@@ -129,9 +129,11 @@ def create_transaction():
     return http_response, 200
         
 
-@app.route("/v1/txn/<transaction_id>", methods=["GET"])
-def get_transaction_details(transaction_id):
-    response = requests.get(f"{database_server}/txn/{transaction_id}")
+@app.route("/v1/txn", methods=["GET"])
+def get_transaction_details():
+    transaction_id= request.args.get("transaction_id")
+    param_json = {"transaction_id": transaction_id}
+    response = requests.get(f"{database_server}/txn", params=param_json)
     if response.status_code == 200:
         return response.json()["details"], 200
     return {"message": "Error getting transaction details"}, 500    
@@ -168,7 +170,7 @@ class EventBroker:
         request_json = {"transaction_id": transaction_id, "status": status}
         for retry_attempt in range(3):
             try:
-                response = requests.post(f"{database_server}/log_status", json=request_json)
+                response = requests.post(f"{database_server}/txn_status", json=request_json)
             except Exception as e:
                 logger.warning(f"Attempt {retry_attempt} at logging status({status}) of transaction ({transaction_id}). Error: {str(e)}")
             else:

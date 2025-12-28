@@ -29,7 +29,8 @@ def get_transaction_details(arg_list:list):
     if arg_list[0] != "read":
         print("Invalid Command! Pls try again")
     else:
-        response = requests.get(f"{payment_api_url}/txn/{arg_list[1]}")
+        param_json = {"transaction_id": arg_list[1]}
+        response = requests.get(f"{payment_api_url}/txn", params=param_json)
         if response == 200:
             details = response.json()["details"]
             print(f"{details}")

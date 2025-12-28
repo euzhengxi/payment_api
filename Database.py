@@ -16,7 +16,7 @@ def get_database_status():
         return {"status": "running"}, 200
     return {"status": "internal server error"}, 500
 
-@app.route("/v1/log_transaction", methods=["POST"])
+@app.route("/v1/txn", methods=["POST"])
 def log_transaction():
     info = request.get_json()
     transaction_id = database.log_transaction(payer=info["payer"], payee=info["payee"], amount=info["amount"], timestamp=info["timestamp"])
@@ -24,20 +24,21 @@ def log_transaction():
         return {"message": "Transaction logged", "transaction_id": transaction_id}, 200
     return {"message": "Duplicate transaction id", "transaction_id": None}, 500
 
-@app.route("/v1/log_status", methods=["POST"])
+@app.route("/v1/txn", methods=["GET"])
+def get_transaction_details():
+    transaction_id= request.args.get("transaction_id")
+    details = database.get_transaction(transaction_id=transaction_id)
+    if details != None:
+        return {"message": "transaction found", "details":details}, 200
+    return {"message": "transaction_id not found", "details": None}, 500
+
+@app.route("/v1/txn_status", methods=["POST"])
 def log_transaction_status():
     info = request.get_json()
     status = database.log_status(transaction_id=info["transaction_id"], status=info["status"])
     if status == StatusCode.SUCCESS:
         return {"message": "Transaction status logged"}, 200
     return {"message": "Transaction_id not found"}, 500
-
-@app.route("/v1/txn/<transaction_id>", methods=["GET"])
-def get_transaction_details(transaction_id):
-    details = database.get_transaction(transaction_id=transaction_id)
-    if details != None:
-        return {"message": "transaction found", "details":details}, 200
-    return {"message": "transaction_id not found", "details": None}, 500
 
 class StatusCode:
     SUCCESS = 0

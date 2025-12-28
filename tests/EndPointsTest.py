@@ -26,14 +26,15 @@ class DatabaseTest:
             "amount": 10, 
             "timestamp": time.time()
         }
-        response = requests.post(f"{self.database_server}/log_transaction", json=request_json)
+        response = requests.post(f"{self.database_server}/txn", json=request_json)
         assert response.status_code == 200
 
         return response.json()["transaction_id"]
     
     def get_transaction_details(self):
         transaction_id = self.log_transaction()
-        response = requests.get(f"{self.database_server}/txn/{transaction_id}")
+        param_json = {"transaction_id": transaction_id}
+        response = requests.get(f"{self.database_server}/txn", params=param_json)
         assert response.status_code == 200
         assert response,json()["payer"] == "0000111122223333" 
         assert response,json()["payee"] == "0000222233331111"
@@ -45,7 +46,7 @@ class DatabaseTest:
             "transaction_id": transaction_id,
             "status": TransactionStatus.FULFILLED 
         }
-        response = requests.post(f"{self.database_server}/log_status", json=request_json)
+        response = requests.post(f"{self.database_server}/txn_status", json=request_json)
         assert response.status_code == 200
     
     def run(self):
@@ -64,7 +65,7 @@ class IssuerTest:
     
     def create_user(self):
         request_json = {"user": "0000111122223333"}
-        response = requests.post(f"{self.server}/create", json=request_json)
+        response = requests.post(f"{self.server}/user", json=request_json)
         assert response.status_code == 200
 
     def create_transaction(self):
@@ -104,7 +105,9 @@ class MainTest:
     
     def get_transaction(self):
         transaction_id = self.create_transaction()
-        response = requests.get(f"{self.server}/txn/{transaction_id}")
+        param_json = {"transaction_id": transaction_id}
+        response = requests.get(f"{self.server}/txn", params=param_json)
+        assert response.status_code == 200
         assert response.json()["payer"] == "0000111122223333"
         assert response.json()["payee"] == "0000222233331111"
         assert response.json()["amount"] == 10

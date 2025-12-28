@@ -52,6 +52,7 @@ Each component runs as an independent **microservice**, communicating over HTTP.
 ### v2 — 28 Dec 2025
 
 - Added versioning to endpoints
+- modified endpoints to adhere to RESTful guidelines
 
 ---
 
