@@ -48,6 +48,11 @@ def get_authorisation(payer:str, payee:str, amount:float, issuer_server:str) -> 
         try:
             response = requests.post(f"{issuer_server}/txn", json=transaction_json)
         except Exception as e:
+            if retry_attempt != 2: 
+                delay = random.randint(0, 2 ** retry_attempt)
+                logger.warning(f"Attempt {retry_attempt}: Error getting transaction authorised.")
+                print(f"delaying for {delay} seconds before retying")
+                time.sleep(delay)
             logger.warning(e)
         else:
             if response.status_code == 200:

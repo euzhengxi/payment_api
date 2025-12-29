@@ -11,6 +11,7 @@ import threading
 from Event import * 
 from EventSubscriber import *
 from Backend import *
+from CustomExceptions import LoggingTransactionError, LoggingTransactionStatusError
 
 #read up more on usage of logger
 
@@ -74,10 +75,21 @@ def create_transaction():
     #logging transaction with retries
     transaction_id = None
     for retry_attempt in range(3):
-        response = requests.post(f'{database_server}/txn', json=transaction_json)
-        if (response.status_code == 200):
-            transaction_id = response.json()["transaction_id"]
-            break
+        try:
+            response = requests.post(f'{database_server}/txn', json=transaction_json)
+            if (response.status_code == 200):
+                transaction_id = response.json()["transaction_id"]
+                break
+            else:
+                raise LoggingTransactionError
+        except Exception as e:
+            if retry_attempt != 2: 
+                delay = random.randint(0, 2 ** retry_attempt)
+                logger.warning(f"Attempt {retry_attempt}: Error logging transaction.")
+                print(f"delaying for {delay} seconds before retying")
+                time.sleep(delay)
+            logger.warning(f"Error logging transaction in database: {e}")
+
     if transaction_id == None:
         logger.warning(f"{time.time()}: Error creating transaction. Details: payer:{payer}, payee:{payee}, amount:{amount}, token:{token}")
         return {"message": "Failure creating transaction, please try again later", "transaction_id":None, "details":None}
@@ -177,11 +189,17 @@ class EventBroker:
         for retry_attempt in range(3):
             try:
                 response = requests.post(f"{database_server}/txn_status", json=request_json)
-            except Exception as e:
-                logger.warning(f"Attempt {retry_attempt} at logging status({status}) of transaction ({transaction_id}). Error: {str(e)}")
-            else:
                 if response.status_code == 200:
                     break
+                else: 
+                    raise LoggingTransactionStatusError
+            except Exception as e:
+                if retry_attempt != 2: 
+                    delay = random.randint(0, 2 ** retry_attempt)
+                    logger.warning(f"Attempt {retry_attempt}: Error logging transaction status.")
+                    print(f"delaying for {delay} seconds before retying")
+                    time.sleep(delay)
+                logger.warning(f"Attempt {retry_attempt} at logging status({status}) of transaction ({transaction_id}). Error: {str(e)}")
     
     @classmethod
     def run(cls):

@@ -57,6 +57,7 @@ Each component runs as an independent **microservice**, communicating over HTTP.
 ### v2 — 29 Dec 2025
 
 - Modified payment process to include creation of transaction nonce and token (idempotent keys are omitted due to the simplicity of client interface)
+- Modified retries to adopt exponential backoff
 
 ---
 

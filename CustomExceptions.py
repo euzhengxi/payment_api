@@ -18,3 +18,9 @@ class TransactionRegistrationError(Exception):
 
 class TransactionCreationError(Exception):
     pass
+
+class LoggingTransactionError(Exception):
+    pass
+
+class LoggingTransactionStatusError(Exception):
+    pass
