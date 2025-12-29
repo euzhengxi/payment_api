@@ -12,3 +12,9 @@ class AuthorisationError(Exception):
 
 class InvalidConnectionError(Exception):
     pass
+
+class TransactionRegistrationError(Exception):
+    pass
+
+class TransactionCreationError(Exception):
+    pass

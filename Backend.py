@@ -2,12 +2,17 @@ import logging
 import json
 import time
 import requests
+import random
 
 logger = logging.getLogger(__name__)
 
 class StatusCode:
     SUCCESS = 0
     FAILURE = 1
+
+def compute_token(nonce):
+    return f"{int(nonce) - random.randint(0, 10 ** 10)}"
+
 
 def verify_transaction(payer:str, payee:str, amount:float) -> StatusCode: 
     for char in payer:
@@ -25,7 +30,7 @@ def verify_transaction(payer:str, payee:str, amount:float) -> StatusCode:
 
 
 def check_fraud(payer:str, payee:str, amount:float) -> StatusCode: 
-    SUSPICIOUS_ORGANISATIONS = ["1234 1111 2222 3333"]
+    SUSPICIOUS_ORGANISATIONS = ["1234111122223333"]
     if (payer or payee) in SUSPICIOUS_ORGANISATIONS:
         return StatusCode.FAILURE
     return StatusCode.SUCCESS

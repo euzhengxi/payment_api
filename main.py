@@ -51,18 +51,24 @@ app = Flask(__name__)
 def get_server_status():
     return {"status": "running"}, 200
 
+@app.route("/v1/token", methods=["GET"])
+def compute_transaction_token():
+    nonce = request.args.get("nonce")
+    token = compute_token(nonce)
+    return {"message": "Token successfully registered", "token":token}, 200
+
 @app.route("/v1/txn", methods=["POST"])
 def create_transaction():
     info = request.get_json()
     payer, payee = info["payer"], info["payee"]
     amount = float(info["amount"])
-    timestamp = info["timestamp"]
+    token = info["token"]
     #synchronous critical path, asynchronous side effects
     transaction_json = {
         "payer": payer,
         "payee": payee,
         "amount": amount,
-        "timestamp": timestamp
+        "token": token
     }
 
     #logging transaction with retries
@@ -73,7 +79,7 @@ def create_transaction():
             transaction_id = response.json()["transaction_id"]
             break
     if transaction_id == None:
-        logger.warning(f"{time.time()}: Error creating transaction. Details: payer:{payer}, payee:{payee}, amount:{amount}, timestamp:{timestamp}")
+        logger.warning(f"{time.time()}: Error creating transaction. Details: payer:{payer}, payee:{payee}, amount:{amount}, token:{token}")
         return {"message": "Failure creating transaction, please try again later", "transaction_id":None, "details":None}
 
 
@@ -84,7 +90,7 @@ def create_transaction():
             "payer": payer, 
             "payee": payee, 
             "amount": amount,
-            "timestamp": timestamp
+            "token": token
         }
     }
     broker.publish_event(CreatedEvent(transaction_id))

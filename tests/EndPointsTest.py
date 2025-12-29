@@ -1,5 +1,6 @@
 import requests 
 import time
+import random
 import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -10,7 +11,7 @@ from Issuer import *
 
 NUM_DATABASE_ENDPOINTS = 4
 NUM_ISSUER_ENDPOINTS = 3
-NUM_MAIN_ENDPOINTS = 3
+NUM_MAIN_ENDPOINTS = 4
 
 class DatabaseTest:
     database_server = "http://127.0.0.1:8001/v1"
@@ -24,7 +25,7 @@ class DatabaseTest:
             "payer": "0000111122223333", 
             "payee": "0000222233331111",
             "amount": 10, 
-            "timestamp": time.time()
+            "token": f"{int(time.time()) + random.randint(0, 10 ** 10)}"
         }
         response = requests.post(f"{self.database_server}/txn", json=request_json)
         assert response.status_code == 200
@@ -90,13 +91,21 @@ class MainTest:
     def get_status(self):
         response = requests.get(f"{self.server}/status")
         assert response.status_code == 200
+    
+    def compute_transaction_token(self):
+        sessionID = f"{int(time.time()) + random.randint(0, 10 ** 10)}"
+        response = requests.get(f"{self.server}/token", params={"nonce": sessionID})
+        assert response.status_code == 200
+        return response.json()["token"]
 
     def create_transaction(self):
+        token = self.compute_transaction_token()
+
         request_json = {
             "payer": "0000111122223333", 
             "payee": "0000222233331111",
             "amount": 10,
-            "timestamp": time.time()
+            "token": token
         }
 
         response = requests.post(f"{self.server}/txn", json=request_json)
@@ -115,6 +124,7 @@ class MainTest:
 
     def run(self):
         self.get_status()
+        self.compute_transaction_token()
         self.create_transaction()
         self.get_transaction()
         print(f"{NUM_MAIN_ENDPOINTS} endpoints in main are working")

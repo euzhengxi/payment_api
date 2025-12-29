@@ -1,6 +1,7 @@
 import json
 import pathlib
 import logging
+import time
 from flask import Flask, request
 
 from CustomExceptions import DirtyCacheError
@@ -19,7 +20,7 @@ def get_database_status():
 @app.route("/v1/txn", methods=["POST"])
 def log_transaction():
     info = request.get_json()
-    transaction_id = database.log_transaction(payer=info["payer"], payee=info["payee"], amount=info["amount"], timestamp=info["timestamp"])
+    transaction_id = database.log_transaction(payer=info["payer"], payee=info["payee"], amount=info["amount"], token=info["token"])
     if transaction_id != None:
         return {"message": "Transaction logged", "transaction_id": transaction_id}, 200
     return {"message": "Duplicate transaction id", "transaction_id": None}, 500
@@ -67,23 +68,18 @@ class Database:
         else:
             logger.info(f"Database initialised at {timestamp}")
 
-    def _compute_transaction_id(self, payer, payee, amount, timestamp):
-        return f"{payer}-{payee}-{amount}-{timestamp}"
-
-    def log_transaction(self, payer, payee, amount, timestamp):
-        transaction_id = self._compute_transaction_id(payer, payee, amount, timestamp)
-
-        if transaction_id in self.data:
-            logger.warning(f"Duplicate transaction ignored. id:{transaction_id}, payer:{payer}, payee:{payee}, amount:{amount}, timestamp:{timestamp}")
+    def log_transaction(self, payer, payee, amount, token):
+        if token in self.data:
+            logger.warning(f"Duplicate transaction ignored. id:{token}, payer:{payer}, payee:{payee}, amount:{amount}")
             return None
         
         details = dict()
         details["payer"] = payer
         details["payee"] = payee
         details["amount"] = amount
-        details["timestamp"] = timestamp
-        self.data[transaction_id]= dict()
-        self.data[transaction_id]["details"] = details
+        details["timestamp"] = time.time()
+        self.data[token]= dict()
+        self.data[token]["details"] = details
 
         try:
             with open(self.database_file, "w") as file:
@@ -91,7 +87,7 @@ class Database:
         except Exception as e:
             pass
         else:
-            return transaction_id
+            return token
         return None
 
     def log_status(self, transaction_id, status) -> StatusCode:
