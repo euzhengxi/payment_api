@@ -92,7 +92,7 @@ def create_transaction():
 
     if transaction_id == None:
         logger.warning(f"{time.time()}: Error creating transaction. Details: payer:{payer}, payee:{payee}, amount:{amount}, token:{token}")
-        return {"message": "Failure creating transaction, please try again later", "transaction_id":None, "details":None}
+        return {"message": "Failure creating transaction, please try again later", "transaction_id":None, "details":None}, 500
 
 
     http_response = {
@@ -151,10 +151,14 @@ def create_transaction():
 def get_transaction_details():
     transaction_id= request.args.get("transaction_id")
     param_json = {"transaction_id": transaction_id}
-    response = requests.get(f"{database_server}/txn", params=param_json)
-    if response.status_code == 200:
-        return response.json()["details"], 200
-    return {"message": "Error getting transaction details"}, 500    
+    try:
+        response = requests.get(f"{database_server}/txn", params=param_json)
+        if response.status_code == 200:
+            return response.json()["details"], 200
+        else:
+            raise Exception
+    except Exception as e:
+        return {"message": f"Error getting transaction details {e}"}, 500    
 
 #EventBroker
 class EventBroker:

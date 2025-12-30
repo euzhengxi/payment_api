@@ -25,13 +25,13 @@ def create_new_transaction(arg_list:list):
                      raise TransactionRegistrationError
             
             except Exception as e:
-                if retry_attempt != 2: 
-                    delay = random.randint(0, 2 ** retry_attempt)
-                    message = response.json()["message"]
-                    print(f"Attempt {retry_attempt}: Error registering transaction. {message}")
-                    print(f"delaying for {delay} seconds before retying")
-                    time.sleep(delay)
-                else:
+                delay = random.randint(0, 2 ** retry_attempt)
+                message = response.json()["message"]
+                print(f"Attempt {retry_attempt}: Error registering transaction. {message}")
+                print(f"delaying for {delay} seconds before retying")
+                print()
+                time.sleep(delay)
+                if retry_attempt == 2:
                     print("Error registering transaction after 3 tries, Please try again later")
 
             else:
@@ -46,14 +46,15 @@ def create_new_transaction(arg_list:list):
                     else:
                         raise TransactionCreationError
                 except Exception as e:
-                    if retry_attempt != 2: 
-                        delay = random.randint(0, 2 ** retry_attempt)
-                        message = response.json()["message"]
-                        print(f"Attempt {retry_attempt}: Error creating transaction. {message}")
-                        print(f"delaying for {delay} seconds before retying")
-                        time.sleep(delay)
-                    else:
+                    delay = random.randint(0, 2 ** retry_attempt)
+                    message = response.json()["message"]
+                    print(f"Attempt {retry_attempt}: Error creating transaction. {message}")
+                    print(f"delaying for {delay} seconds before retying")
+                    print()
+                    time.sleep(delay)
+                    if retry_attempt == 2:
                         print("Error creating transaction after 3 tries, Please try again later")
+                        print()
             
             
 
@@ -63,7 +64,7 @@ def get_transaction_details(arg_list:list):
     else:
         param_json = {"transaction_id": arg_list[1]}
         response = requests.get(f"{payment_api_url}/txn", params=param_json)
-        if response == 200:
+        if response.status_code == 200:
             details = response.json()
             print(f'payee: {details["payee"]}')
             print(f'amount: {details["amount"]}')
