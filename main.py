@@ -12,6 +12,7 @@ from Event import *
 from EventSubscriber import *
 from Backend import *
 from CustomExceptions import LoggingTransactionError, LoggingTransactionStatusError
+from RetryQueue import RetryQueue
 
 #read up more on usage of logger
 
@@ -64,6 +65,7 @@ def create_transaction():
     payer, payee = info["payer"], info["payee"]
     amount = float(info["amount"])
     token = info["token"]
+    webhook = info["webhook"]
     #synchronous critical path, asynchronous side effects
     transaction_json = {
         "payer": payer,
@@ -139,8 +141,9 @@ def create_transaction():
     status = fulfill_transaction(payer, payee, amount)
     if status == StatusCode.FAILURE:
         broker.publish_event(RejectedEvent(transaction_id))
-        http_response["message"] = "transaction fulfillment error"
-        return http_response, 500
+        http_response["message"] = "transaction fulfillment incomplete"
+        retry_queue.enqueue(transaction_id=transaction_id, webhook=webhook)
+        return http_response, 202
     broker.publish_event(FulfilledEvent(transaction_id))
 
     http_response["message"] = "transaction completed"
@@ -242,7 +245,11 @@ if __name__ == "__main__":
     broker.subscribe_to_event(TransactionStatus.REJECTED,  AnalyticsSubscriber())
     broker.subscribe_to_event(TransactionStatus.TERMINATED, SupportSubscriber())
 
+    #set up retry queue
+    retry_queue = RetryQueue(database_server, broker)
+
     threading.Thread(target=broker.run, daemon=True).start()
+    threading.Thread(target=retry_queue.run, daemon=True).start()
     app.run(port=8000)
 
 

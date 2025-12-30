@@ -39,29 +39,9 @@ Each component runs as an independent **microservice**, communicating over HTTP.
 
 ---
 
-## Versions
+## ChangeLog
 
-### v1 — 25 Dec 2025
-
-- Fully functional payment API system
-- Event-driven handling of side effects
-- Simple CLI client for interacting with services
-- Unit tests covering API endpoints
-- Logging
-
-### v2 — 28 Dec 2025
-
-- Added versioning to endpoints
-- Modified endpoints to adhere to RESTful guidelines
-
-### v3 — 29 Dec 2025
-
-- Modified payment process to include creation of transaction nonce and token (idempotent keys are omitted due to the simplicity of client interface)
-- Modified retries to adopt exponential backoff
-
-### v4 — 30 Dec 2025
-
-- Fixed bug that crashes client when getting transaction details from server that is down
+Refer to changelog.txt for details on changes
 
 ---
 

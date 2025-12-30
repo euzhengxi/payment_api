@@ -105,7 +105,8 @@ class MainTest:
             "payer": "0000111122223333", 
             "payee": "0000222233331111",
             "amount": 10,
-            "token": token
+            "token": token,
+            "webhook": "http://127.0.0.1:9000/v1"
         }
 
         response = requests.post(f"{self.server}/txn", json=request_json)
