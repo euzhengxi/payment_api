@@ -6,7 +6,7 @@ from flask import Flask, request
 
 from CustomExceptions import DirtyCacheError
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 logging.basicConfig(filename='logs/db_logs.txt', level=logging.INFO)
 
 #routing functions
@@ -112,9 +112,9 @@ class Database:
         if self.data and transaction_id in self.data:
             transaction_details = self.data[transaction_id]["details"]
         elif self.data:
-            logger.warning(f"transaction id not found in database. id: {transaction_id}")
+            logger.warning(f"Transaction id not found in database. id: {transaction_id}")
         else:
-            logger.error(f"data is not initialised.")
+            logger.error(f"Data is not initialised.")
 
         return transaction_details
         

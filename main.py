@@ -85,12 +85,13 @@ def create_transaction():
             else:
                 raise LoggingTransactionError
         except Exception as e:
+            logger.warning(f"Attempt {retry_attempt + 1}: Error logging transaction in database: {e}")
             if retry_attempt != 2: 
-                delay = random.randint(0, 2 ** retry_attempt)
-                logger.warning(f"Attempt {retry_attempt}: Error logging transaction.")
-                print(f"delaying for {delay} seconds before retying")
+                delay = random.randint(0, 2 ** (retry_attempt + 1))
+                logger.warning(f"Delaying for {delay} seconds before retrying")
                 time.sleep(delay)
-            logger.warning(f"Error logging transaction in database: {e}")
+            else:
+                logger.warning(f"All attempts at logging transaction failed.")
 
     if transaction_id == None:
         logger.warning(f"{time.time()}: Error creating transaction. Details: payer:{payer}, payee:{payee}, amount:{amount}, token:{token}")
@@ -138,7 +139,7 @@ def create_transaction():
     broker.publish_event(AuthorisedEvent(transaction_id))
         
     #update merchant's account
-    status = fulfill_transaction(payer, payee, amount)
+    status = fulfill_transaction(transaction_id, payer, payee, amount)
     if status == StatusCode.FAILURE:
         broker.publish_event(RejectedEvent(transaction_id))
         http_response["message"] = "transaction fulfillment incomplete"
@@ -201,28 +202,31 @@ class EventBroker:
                 else: 
                     raise LoggingTransactionStatusError
             except Exception as e:
+                logger.warning(f"Attempt {retry_attempt + 1}: Error logging transaction ({transaction_id}) in database: {e}")
                 if retry_attempt != 2: 
-                    delay = random.randint(0, 2 ** retry_attempt)
-                    logger.warning(f"Attempt {retry_attempt}: Error logging transaction status.")
-                    print(f"delaying for {delay} seconds before retying")
+                    delay = random.randint(0, 2 ** (retry_attempt + 1))
+                    logger.warning(f"Delaying for {delay} seconds before retrying")
                     time.sleep(delay)
-                logger.warning(f"Attempt {retry_attempt} at logging status({status}) of transaction ({transaction_id}). Error: {str(e)}")
+                else:
+                    logger.warning(f"All attempts at logging transaction failed.")
+                
     
     @classmethod
     def run(cls):
-        while len(cls.event_queue) != 0:
-            event = cls.event_queue.popleft()
-            status = event.get_status()
-            transaction_id = event.get_transaction_id()
-            cls.log_status(transaction_id, status)
-
-            #handle event
-            if status in cls.subscribers:
-                for subscriber in cls.subscribers[status]:
-                    future = cls.executor.submit(subscriber.handle_event, transaction_id) 
-                    if future.result() == StatusCode.FAILURE:
-                        logger.error(f"{time.time()}: {subscriber} failed handling transaction {transaction_id} with status{status}")
-                        cls.publish_event(TerminatedEvent(transaction_id))     
+        while True:
+            if len(cls.event_queue) != 0:
+                event = cls.event_queue.popleft()
+                status = event.get_status()
+                transaction_id = event.get_transaction_id()
+                cls.log_status(transaction_id, status)
+            
+                #handle event
+                if status in cls.subscribers:
+                    for subscriber in cls.subscribers[status]:
+                        future = cls.executor.submit(subscriber.handle_event, database_server, transaction_id) 
+                        if future.result() == StatusCode.FAILURE:
+                            logger.error(f"{time.time()}: {subscriber} failed handling transaction {transaction_id} with status{status}")
+                            cls.publish_event(TerminatedEvent(transaction_id))     
                     
 
 

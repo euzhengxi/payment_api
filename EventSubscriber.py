@@ -21,6 +21,10 @@ payment state machine:
 '''
 
 logger = logging.getLogger(__name__)
+logger.propagate = False  
+handler = logging.FileHandler("logs/subscriber_logs.txt")
+logger.addHandler(handler)
+
 
 #Subscribers
 class EventSubscriber(ABC):
@@ -35,13 +39,11 @@ class AnalyticsSubscriber(EventSubscriber):
             response = requests.get(f"{database_server}/txn", params=param_json)
             if response.status_code == 200:
                 details = response.json()["details"]
-                #add transaction details for analytics
-                logger.info(f"{time.time()}: transaction logged for analytics: transaction details: {details}")
-                #add transaction details for fraud analysis
-                logger.info(f"{time.time()}: transaction logged for analytics: transaction details: {details}")
+                logger.info(f"{time.time()}: Transaction {transaction_id} logged for analytics: transaction details: {details}")
+                logger.info(f"{time.time()}: Transaction {transaction_id} logged for analytics: transaction details: {details}")
                 return StatusCode.SUCCESS
         except Exception as e:
-            logger.error(f"{time.time()}: error occurred logging transaction for analytics. Error {str(e)}")
+            logger.error(f"{time.time()}: Error occurred logging transaction for analytics. Error {str(e)}")
         return StatusCode.FAILURE
 
 class EmailSubscriber(EventSubscriber):
@@ -51,11 +53,10 @@ class EmailSubscriber(EventSubscriber):
             response = requests.get(f"{database_server}/txn", params=param_json)
             if response.status_code == 200:
                 details = response.json()["details"]
-                #add transaction details for analytics
-                logger.info(f"{time.time()}: transaction details sent to merchant: transaction details: {details}")
+                logger.info(f"{time.time()}: Transaction {transaction_id} details sent to merchant: transaction details: {details}")
                 return StatusCode.SUCCESS
         except Exception as e:
-            logger.error(f"{time.time()}: error occurred sending details to merchant. Error {str(e)}")
+            logger.error(f"{time.time()}: Error occurred sending details to merchant. Error {str(e)}")
         return StatusCode.FAILURE
 
 class SupportSubscriber(EventSubscriber):
@@ -63,12 +64,11 @@ class SupportSubscriber(EventSubscriber):
         try:
             param_json = {"transaction_id": transaction_id}
             response = requests.get(f"{database_server}/txn", params=param_json)
-            response = requests.get(f"{database_server}/txn")
             if response.status_code == 200:
                 details = response.json()["details"]
-                #add transaction details for analytics
-                logger.info(f"{time.time()}: transaction details sent to support personnnel: transaction details: {details}")
+                logger.info(f"{time.time()}: Transaction {transaction_id} details sent to support personnnel: transaction details: {details}")
+                print("support", )
                 return StatusCode.SUCCESS
         except Exception as e:
-            logger.error(f"{time.time()}: error occurred sending details to support personnnel. Error {str(e)}")
+            logger.error(f"{time.time()}: Error occurred sending details to support personnnel. Error {str(e)}")
         return StatusCode.FAILURE

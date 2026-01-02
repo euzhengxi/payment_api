@@ -1,3 +1,6 @@
+2 Jan 2026 - v5:
+- Fixed logging
+
 30 Dec 2025 - v4:
 - Fixed bug that crashes client when getting transaction details from server that is down
 - Added failover mechanism (retry queue) for incomplete transactions 

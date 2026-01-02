@@ -5,7 +5,9 @@ from Backend import *
 from Event import FulfilledEvent
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename='logs/failed_txn_logs.txt', level=logging.INFO)
+logger.propagate = False  
+handler = logging.FileHandler("logs/failed_txn_logs.txt")
+logger.addHandler(handler)
 
 class FailedTransaction :
     def __init__(self, transaction_id, webhook):
@@ -45,12 +47,12 @@ class RetryQueue:
                     raise Exception
                 
             except Exception as e:
-                delay = random.randint(0, 2 ** retry_attempt)
-                logger.warning(f"Attempt {retry_attempt}: Error sending updates to client")
-                print(f"delaying for {delay} seconds before retying")
-                print()
-                time.sleep(delay)
-                if retry_attempt == 2:
+                logger.warning(f"Attempt {retry_attempt + 1}: Error sending updates to client")
+                if retry_attempt != 2:
+                    delay = random.randint(0, 2 ** (retry_attempt+ 1))
+                    logger.warning(f"delaying for {delay} seconds before retrying")
+                    time.sleep(delay)
+                else:
                     logger.warning("All attempts updating the client failed")
                 logger.warning(e)
 
@@ -59,7 +61,6 @@ class RetryQueue:
         while True:
             for _ in range(len(self.queue)):
                 txn = self.queue.popleft()
-                print(txn)
                 transaction_id = txn.id
                 webhook = txn.webhook
                 status = self.fulfill_transaction(transaction_id)

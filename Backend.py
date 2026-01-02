@@ -37,7 +37,7 @@ def check_fraud(payer:str, payee:str, amount:float) -> StatusCode:
 
 
 def get_authorisation(payer:str, payee:str, amount:float, issuer_server:str) -> StatusCode:         
-    #post request with retries, is this right? and what kind of errors can i get from making api requests?
+    
     transaction_json = {
         "payer": payer,
         "payee": payee, 
@@ -48,34 +48,36 @@ def get_authorisation(payer:str, payee:str, amount:float, issuer_server:str) -> 
         try:
             response = requests.post(f"{issuer_server}/txn", json=transaction_json)
         except Exception as e:
-            if retry_attempt != 2: 
-                delay = random.randint(0, 2 ** retry_attempt)
-                logger.warning(f"Attempt {retry_attempt}: Error getting transaction authorised.")
-                print(f"delaying for {delay} seconds before retying")
-                time.sleep(delay)
+            logger.warning(f"Attempt {retry_attempt + 1}: Error getting transaction authorised.")
             logger.warning(e)
+            if retry_attempt != 2: 
+                delay = random.randint(0, 2 ** (retry_attempt+ 1))
+                logger.warning(f"delaying for {delay} seconds before retrying")
+                time.sleep(delay)
+            else:
+                logger.warning("All attempts getting authorisation failed")
         else:
             if response.status_code == 200:
                 return StatusCode.SUCCESS
-    logger.warning(response.json()["message"])
+    
     return StatusCode.FAILURE
 
-def fulfill_transaction(payer, payee, amount:float) -> StatusCode:
+def fulfill_transaction(transaction_id, payer, payee, amount:float) -> StatusCode:
     merchant_database = "databases/merchant_database.json"
-    logger.info(f'{payer}, {payee}, {amount}')
+    
     try:
         with open(merchant_database, "r") as file:
             data = json.load(file)
-            logger.info("file loaded")
             data[payee]["balance"] += amount
             data[payee]["transaction"].append((time.time(), payer, amount))
 
         with open(merchant_database, "w") as file:
             json.dump(data, file, indent=4)
     except FileNotFoundError as e:
-        logger.fatal(f"{time.time()}: merchant database missing")
+        logger.fatal(f"{time.time()}: Merchant database missing")
     except ValueError as e:
-        logger.fatal(f"{time.time()} merchant database is corrupted. {e}")    
+        logger.fatal(f"{time.time()} Merchant database is corrupted. {e}")    
     else:
+        logger.info(f"transaction ({transaction_id}) logged")
         return StatusCode.SUCCESS
     return StatusCode.FAILURE

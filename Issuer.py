@@ -23,7 +23,7 @@ Rough payment workflow
 4. updating customers and business
 5. releasing funds to business 
 '''
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 logging.basicConfig(filename='logs/issuer_logs.txt', level=logging.INFO)
 
 class StatusCode:
@@ -50,7 +50,7 @@ def get_status():
 @app.route("/v1/txn", methods=["POST"])
 def create_transaction():
     info = request.get_json()
-    logger.info(f"transaction received: {info}")
+    logger.info(f"Transaction received: {info}")
     transaction = Transaction(info["payer"], info["payee"], float(info["amount"]))
     status = issuer.check_validity(transaction)
     if status == StatusCode.SUCCESS:
@@ -64,7 +64,7 @@ def create_user():
     user = request.get_json()["user"]
     status = issuer.create_user(user)
     if status == StatusCode.SUCCESS:
-        logger.info(f"user {user} created by admin")
+        logger.info(f"User {user} created by admin")
         return {"message": f"user {user} created"}, 200
     return {"message": f"user {user} not created"}, 500
 

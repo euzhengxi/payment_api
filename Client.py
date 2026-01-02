@@ -39,13 +39,14 @@ def create_new_transaction(arg_list:list):
                      raise TransactionRegistrationError
             
             except Exception as e:
-                delay = random.randint(0, 2 ** retry_attempt)
                 message = response.json()["message"]
-                print(f"Attempt {retry_attempt}: Error registering transaction. {message}")
-                print(f"delaying for {delay} seconds before retying")
-                print()
-                time.sleep(delay)
-                if retry_attempt == 2:
+                print(f"Attempt {retry_attempt + 1}: Error registering transaction. {message}")
+                if retry_attempt != 2:
+                    delay = random.randint(0, 2 ** (retry_attempt + 1))
+                    print(f"delaying for {delay} seconds before retrying")
+                    print()
+                    time.sleep(delay)
+                else:
                     print("Error registering transaction after 3 tries, Please try again later")
 
             else:
@@ -66,13 +67,15 @@ def create_new_transaction(arg_list:list):
                     else:
                         raise TransactionCreationError
                 except Exception as e:
-                    delay = random.randint(0, 2 ** retry_attempt)
                     message = response.json()["message"]
-                    print(f"Attempt {retry_attempt}: Error creating transaction. {message}")
-                    print(f"delaying for {delay} seconds before retying")
-                    print()
-                    time.sleep(delay)
-                    if retry_attempt == 2:
+                    print(f"Attempt {retry_attempt + 1}: Error creating transaction. {message}")
+                    
+                    if retry_attempt != 2:
+                        delay = random.randint(0, 2 ** (retry_attempt + 1))
+                        print(f"delaying for {delay} seconds before retrying")
+                        print()
+                        time.sleep(delay)
+                    else:
                         print("Error creating transaction after 3 tries, Please try again later")
                         print()
             

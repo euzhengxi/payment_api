@@ -88,7 +88,7 @@ class RejectedEvent(Event):
 
 class TerminatedEvent(Event):
     def __init__(self, transaction_id:str):
-        super().__init(transaction_id)
+        super().__init__(transaction_id)
         self.status = TransactionStatus.TERMINATED
     
     def get_status(self):
