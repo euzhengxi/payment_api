@@ -1,5 +1,4 @@
 from flask import Flask, request
-import json
 import sys
 from collections import defaultdict, deque
 from concurrent.futures import ThreadPoolExecutor
@@ -7,6 +6,7 @@ import requests
 import argparse
 import logging
 import threading
+import signal
 
 from Event import * 
 from EventSubscriber import *
@@ -31,6 +31,11 @@ Rough payment workflow
 '''
 logger = logging.getLogger()
 logging.basicConfig(filename='logs/api_logs.txt', level=logging.INFO)
+
+def set_shutdown_event(signum, frame):
+    logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+    shutdown_event.set()
+    raise KeyboardInterrupt
 
 def set_up_parser():
     parser = argparse.ArgumentParser(
@@ -169,6 +174,32 @@ class EventBroker:
     executor = ThreadPoolExecutor(max_workers=4)
     subscribers = defaultdict(list)
     event_queue: deque[Event] = deque()
+
+    @classmethod
+    def initialise_event_queue(cls):
+        try:
+            with open("databases/event_queue.json") as file:
+                events = json.load(file)
+                for event in events:
+                    match event["status"]:
+                        case 0:
+                            cls.publish_event(CreatedEvent(event["id"]))
+                        case 1:
+                            cls.publish_event(VerifiedEvent(event["id"]))
+                        case 2:
+                            cls.publish_event(CheckedEvent(event["id"]))
+                        case 3:
+                            cls.publish_event(AuthorisedEvent(event["id"]))
+                        case 4:
+                            cls.publish_event(FulfilledEvent(event["id"]))
+                        case 5:
+                            cls.publish_event(RejectedEvent(event["id"]))
+                        case _:
+                            cls.publish_event(TerminatedEvent(event["id"]))
+        except Exception as e:
+            logger.critical("Historial events not loaded")
+        else:
+            logger.info("Historial events loaded")
     
     @classmethod
     def subscribe_to_event(cls, status: TransactionStatus, subscriber: EventSubscriber):
@@ -209,11 +240,28 @@ class EventBroker:
                     time.sleep(delay)
                 else:
                     logger.warning(f"All attempts at logging transaction failed.")
-                
     
     @classmethod
-    def run(cls):
-        while True:
+    def handle_shutdown(cls):
+        if cls.event_queue:
+            queue = []
+            while cls.event_queue:
+                    event = cls.event_queue.popleft()
+                    queue.append(event.to_string())
+            try:
+                with open("databases/event_queue.json") as file:
+                    json.dump(queue, file, indent=4)
+            except Exception as e:
+                logger.critical(f"Error flushing events to database")
+            else:
+                logger.info("Events flushed to database")
+
+        else:
+            logger.info("Event queue is empty. No data is flushed")
+    
+    @classmethod
+    def run(cls, shutdown_event):
+        while not shutdown_event.is_set():
             if len(cls.event_queue) != 0:
                 event = cls.event_queue.popleft()
                 status = event.get_status()
@@ -226,18 +274,23 @@ class EventBroker:
                         future = cls.executor.submit(subscriber.handle_event, database_server, transaction_id) 
                         if future.result() == StatusCode.FAILURE:
                             logger.error(f"{time.time()}: {subscriber} failed handling transaction {transaction_id} with status{status}")
-                            cls.publish_event(TerminatedEvent(transaction_id))     
+                            cls.publish_event(TerminatedEvent(transaction_id))
+        cls.handle_shutdown()
                     
 
-
 if __name__ == "__main__":
+    #graceful shutdown mechanism
+    shutdown_event = threading.Event()
+    signal.signal(signal.SIGINT, set_shutdown_event)
+    signal.signal(signal.SIGTERM, set_shutdown_event)
+
     #set up argparser
     parser = set_up_parser()
     args = parser.parse_args()
     database_server = f"{args.database_server}/v1"
     issuer_server = f"{args.issuer_server}/v1"
 
-    #set up webserver
+    #check database availability
     status = check_database_availability()
     if status == StatusCode.FAILURE:
         logger.fatal(f"{time.time()}: Database isnt running")
@@ -252,9 +305,21 @@ if __name__ == "__main__":
     #set up retry queue
     retry_queue = RetryQueue(database_server, broker)
 
-    threading.Thread(target=broker.run, daemon=True).start()
-    threading.Thread(target=retry_queue.run, daemon=True).start()
-    app.run(port=8000)
+    broker_thread = threading.Thread(target=broker.run, args=(shutdown_event, ))
+    retry_thread = threading.Thread(target=retry_queue.run, args=(shutdown_event, ))
+
+    broker_thread.start()
+    retry_thread.start()
+    
+    try:
+        app.run(port=8000, use_reloader=False)
+    except (KeyboardInterrupt, SystemExit):
+        logger.info("Received shutdown signal")
+    finally:
+        logger.info("Waiting for threads to finish...")
+        broker_thread.join(timeout=10)
+        retry_thread.join(timeout=10)
+        logger.info("Shutdown complete")
 
 
 

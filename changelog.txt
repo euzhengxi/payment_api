@@ -1,3 +1,6 @@
+7 Jan 2026 - v6:
+- Added graceful shutdown mechanisms
+
 2 Jan 2026 - v5:
 - Fixed logging
 

@@ -12,13 +12,12 @@ payment state machine:
 '''
 class TransactionStatus(IntEnum):
     CREATED = 0
-    CHECKOUT = 1
-    VERIFIED = 2
-    CHECKED = 3
-    AUTHORISED = 4
-    FULFILLED = 5
-    REJECTED = 6
-    TERMINATED = 7
+    VERIFIED = 1
+    CHECKED = 2
+    AUTHORISED = 3
+    FULFILLED = 4
+    REJECTED = 5
+    TERMINATED = 6
 
 #Events - immutable, only logging the status
 class Event(ABC):
@@ -31,6 +30,9 @@ class Event(ABC):
     @abstractmethod
     def get_status(self):
         pass
+
+    def to_string(self):
+        return {"id": self.transaction_id, "status": self.get_status()}
 
 class CreatedEvent(Event):
     def __init__(self, transaction_id:str):

@@ -3,6 +3,9 @@ import pathlib
 import logging
 import time
 from flask import Flask, request
+import threading
+import signal
+import sys
 
 from CustomExceptions import DirtyCacheError
 
@@ -117,12 +120,25 @@ class Database:
             logger.error(f"Data is not initialised.")
 
         return transaction_details
-        
+    
+    def handle_shutdown(self):
+        try:
+            with open(self.database_file, "w") as file:
+                json.dump(self.data, file, indent=4)
+        except Exception as e:
+            logger.critical(f"Error flushing data back to database: {e}")
+        else:
+            logger.info("Data successfully flushed")
 
 if __name__ == "__main__":
     database = Database("databases/txn_database.json")
-    app.run(port=8001)
 
+    try:
+        app.run(port=8001)
+    except KeyboardInterrupt:
+        logger.info("Shutdown signal received (Ctrl-C)")
+    finally:
+        database.handle_shutdown()
 
 
     

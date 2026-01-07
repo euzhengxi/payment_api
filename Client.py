@@ -102,7 +102,7 @@ def get_transaction_details(arg_list:list):
 if __name__ == "__main__":
 
     #start flask in background
-    threading.Thread(target=run_webhook_server,daemon=True).start()
+    threading.Thread(target=run_webhook_server).start()
     
     payment_api_url = "http://127.0.0.1:8000/v1"
 
